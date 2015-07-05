@@ -1,24 +1,29 @@
-#!/usr/bin/perl --
-# imgdspl.cgi 131022reviced(javascript 子窓onclick化 foldersFilesArray.sort()、親窓フォーカス )110419acfhgk tmp.cgi 110414rev-all rftpのみTOK 110117-10:(escapeHTML他)
-use CGI qw(escapeHTML);  		# use Net::FTP or File::Find at concerned_proc
+#!/usr/local/bin/perl --
+# imgdspl.cgi
+# pending{header表示(utf8JPｺｰﾄﾞNG、\ｺｰﾄﾞの扱い、form入力後初期出力画面等)}
+#150705rev(ckbox増,textarea,dir../../消去他) 150225rev 150205 131022 110419 110414rev-rftp 110117Create
+use CGI qw(escapeHTML);  					# theOther use Net::FTP & File::Find
 sub cgihtmout;
 $cgi=CGI->new();
-$hdr=$cgi->param("hdr") || "<center>title</center>";		## header
-$ftpsvr0=$cgi->param("ftpsvr");					## ftpsvr
-($usr,$pw,$ftpsvr,$path)=($ftpsvr0=~/ftp:\/\/([^:]+):([^@]+)@([^\/]+)(.*)/) if $ftpsvr0; ##
-$htpsvr=$cgi->param("htpsvr");					## htpsvr
-$dsp=$cgi->param("dsp");					## dirDisplay(nocheck=>suppress)
-$htmfile=$cgi->param("fnm") || "imgdspl.htm";			## htmFileName
-$hmd=$hmd_depth=($cgi->param("hmd") ? $cgi->param("hmd") : "hp/adl"); ## homeDir
+$hdr=$cgi->param("hdr") || "<center>title</center>  <!-- -->";	# header
+$ftpsvr0=$cgi->param("ftpsvr");					# ftpsvr
+($usr,$pw,$ftpsvr,$path)=($ftpsvr0=~/ftp:\/\/([^:]+):([^@]+)@([^\/]+)(.*)/) if $ftpsvr0;
+$htpsvr=$cgi->param("htpsvr");
+$dspldir=$cgi->param("dspldir");				# ckbx
+$dsplsnl=$cgi->param("dsplsnl");
+$dsplrea=$cgi->param("dsplrea");
+$htmfile=$cgi->param("fnm") || "imgdspl.htm";			# htmFileName
+$hmd=$hmd_depth=($cgi->param("hmd") ? $cgi->param("hmd") : "hp/adl");	# homeDir
 $hmd_depth=~s/[^\/]+/\.\./g;					# homeDir_depth_rootUp
 @exds=$cgi->param("exd");
-$re=join "|",grep{quotemeta $_}@exds;				## exceptDirs(reg_Exp)
+$re=join "|",grep{quotemeta $_}@exds;				# exceptDirs(reg_Exp)
 ($itself)=($0=~/([^\/]+)$/);
 $ftpput="${itself}_tmp.txt";					# ftpPut_SrcFile
 @blocks=();
-unless(@tgds=grep $_,$cgi->param("tgd")){
-    @tgds=("img/zzz");				## デホルトtargetDir
-    cgihtmout(); exit;				## targetDirs無 exit
+unless(@tgds=grep $_,$cgi->param("tgd")){			# 初期tgd未入力時デホルト値設定
+    $dspldir=$dsplsnl=$dsplrea="checked";			# ﾁｪｯｸﾎﾞｯｸｽ3個
+    @tgds=("img/zzz");
+    cgihtmout(); exit;					# →exit
 }
 
 # @blk=(d1,f11..f1n) @blks(@blkのtab結合,同subDir..) @blocks(@blks,@blks..)
@@ -39,7 +44,7 @@ else{							# local_proc_bgn
     }
 }
 #-----------------------------------------
-    sub dird($){		# 
+    sub dird($){
 	my ($arg,@blk);
 	$arg=shift;
 	push @blk,"${hmd_depth}/${arg}";
@@ -68,16 +73,17 @@ else{							# local_proc_bgn
 	else{push(@blk,$_) if @blk}				# file 該当dir時のみpush
     }
 #-----------------------------------------
-# @blocks=grep !/$re/,@blocks if $re; 						   # dir except
+# @blocks=grep !/$re/,@blocks if $re; 				# dir except
 # @blocks=map{my @tmp=split("\t",$_);join("\t",shift @tmp,sort @tmp);} sort @blocks; # dir,file sort
 
 $jvs=<<EOT;					# htmFile用全データ生成
 <html><meta http-equiv=content-type content=charset=UTF-8><body>
 <style type=text/css> span.box{width:80; white-space:-moz-pre-wrap;word-wrap:break-word;} </style>
 <script type=text/javascript><!--
-dspl="$dsp";
+dspldir="$dspldir"; dsplsnl="$dsplsnl"; dsplrea="$dsplrea";
 arg=\"\\
 EOT
+
 $jvs.=join("\\n",($hdr,@blocks))."\\\n\";\n";	# arg＆_tail( \改行";改行 )生成 #javascript改行escape\
 $jvs.=join("",<DATA>);				# jvs_bottom生成
 
@@ -92,18 +98,29 @@ else{						# file_local_create
 	close F1;
 }
 cgihtmout();
+
 #------------------------------------------
-sub cgihtmout(){
+sub cgihtmout(){				# 入力form画面出力
 print <<EOT;
 @{[$cgi->header(-charset=>"utf-8")]}
 <html><meta http-equiv=content-type content=charset=UTF-8>
-$hdr<br>@{[$_=join("<br>",@blocks),$_=~s/\t/　/g]}<br>
-Done <a href=# onClick=history.go(-1)>history.go(-1)</a>　　<a href=@{[ $ftpsvr ? "${htpsvr}${hmd}/${htmfile}" : "../${hmd}/${htmfile}" ]}>Show html</a>
-<form action=$itself>$itself<input type=submit value=Gen> header<input type=text name=hdr value=@{[escapeHTML($hdr)]}>　dirListDisplay<input type=checkbox name=dsp value=checked $dsp><br>
-homeD<input type=text name=hmd value=$hmd> fileN<input type=text name=fnm value=$htmfile><br>
-targetD<input type=text name=tgd value=\"$tgds[0]\"> <input type=text name=tgd value=\"$tgds[1]\"> <input type=text name=tgd value=\"$tgds[2]\"> <br>
-exceptD<input type=text name=exd value=\"$exds[0]\"> <input type=text name=exd value=\"$exds[1]\"> <input type=text name=exd value=\"$exds[2]\"><br>
-RemtFtp<input type=text name=ftpsvr size=40 value=$ftpsvr0> Http<input type=text name=htpsvr size=30 value=$htpsvr> (/docRoot/)<br>
+@{[$_=join("<br>",@blocks),$_=~s/\t/　/g]}<br>
+Done <a href=# onClick=history.go(-1)>history.go(-1)</a>
+　　<a href=@{[ $ftpsvr ? "${htpsvr}${hmd}/${htmfile}" : "../${hmd}/${htmfile}" ]}>Show html</a>
+<form action=$itself>$itself<input type=submit value=Gen>
+　Display(<input type=checkbox name=dspldir value=checked $dspldir>dir,
+ <input type=checkbox name=dsplsnl value=checked $dsplsnl>thumbnail,
+ <input type=checkbox name=dsplrea value=checked $dsplrea>real)　　↓ header<br>
+<textarea name=hdr cols=80 rows=5>@{[escapeHTML($hdr)]}</textarea><br>
+　(Place \\ at preLineTail of newLine. NotaBene use of \\, \\\\, or utf8. )<br>
+homeDir<input type=text name=hmd value=$hmd> fileName<input type=text name=fnm value=$htmfile><br>
+targetD<input type=text name=tgd value=\"$tgds[0]\"> <input type=text name=tgd value=\"$tgds[1]\">
+ <input type=text name=tgd value=\"$tgds[2]\">  <input type=text name=tgd value=\"$tgds[3]\">
+ <input type=text name=tgd value=\"$tgds[4]\"><br>
+exceptD<input type=text name=exd value=\"$exds[0]\"> <input type=text name=exd value=\"$exds[1]\">
+ <input type=text name=exd value=\"$exds[2]\"> <input type=text name=exd value=\"$exds[3]\">
+ <input type=text name=exd value=\"$exds[4]\"><br>
+Remote Ftp<input type=text name=ftpsvr size=40 value=$ftpsvr0> Http<input type=text name=htpsvr size=40 value=$htpsvr> (/docRoot/)<br>
 </form></html>
 EOT
 }
@@ -134,30 +151,31 @@ EOT
 # dbg 空白含path名 real smnl img表示OK、span enl()のみ効かない、enl("path") win.open("+path+")でもNG???
 =cut
 __DATA__
-blocks=arg.split("\n").sort();
-header=blocks.slice(0,1);	blocks.shift();		// header抽出(未使用
-real=["<pre>"];  smnl=[];  filnm=[];			// 実サイズ、サムネール、fileリスト
+arg=arg+"\n";	blocks=arg.split("\n");		// ●bugfix
+header=blocks.shift();				// header抽出
+real=["<pre>"];  smnl=[];  filnm=[];		// 実サイズ、サムネール、fileリスト
 for(i in blocks){
 	files=blocks[i].split("\t").sort();
-	dir=files.slice(0,1);	files.shift();
-	filnm.push("<br>" + dir + "<br>");
-	dsep=dspl ? "<span class=box>" + dir + "</span> " : "：";	//dir区切り部
+	dir=files.shift();
+	dir2=dir.substring(6);
+	filnm.push("<br>" + dir2 + "<br>");
+	dsep=dspldir ? "<span class=box><br>" + dir2 + "<br></span> " : "：";	//dir区切り部
 	real.push(dsep); smnl.push(dsep);
 	for(j in files){
-		path=dir + "/" + files[j];
-		real.push("<img src=\"" + path + "\" title=" + path + "\" align=top>");
-		smnl.push("<span onclick=enl(\"" + path + "\") title=\"" + path +
+		path=dir + "/" + files[j]; path2=dir2 + "/" + files[j];
+		real.push("<img src=\"" + path + "\" title=" + path2 + "\" align=top>");
+		smnl.push("<span onclick=enl(\"" + path + "\") title=\"" + path2 +
 		 "\"><img src=\"" + path + "\" width=80 align=top hspace=2 vspace=2></span>");
-		filnm.push(files[j] + "　");
+		filnm.push("<a href=" + path + ">" + files[j] + "</a>　"); // jsﾒｿｯﾄﾞarg内SP含む変数ｴｽｹｰﾌﾟ要不要??
 	}
 }
 real.push("</pre>");
-document.write( header,(dspl ? filnm.join("") : ""),"<br><br>",smnl.join(""),real.join(""));
+document.write( header,(dspldir ? filnm.join("") : ""),"<p>",
+(dsplsnl ? smnl.join("") : ""),(dsplrea ? real.join("") : "") );
 
-function enl(url){					// anotherWindow生成img表示
+function enl(url){				// anotherWindow生成img表示
 	window.open(url,"dmyname","alwaysRaised,width=200,height=200,resizable");
 	parent.opener.focus(); 
 }
 //--></script>
-<p>　<p>　<p>　<p>　<p>　<p>　<p>　<p>----------------------------------------------------------<p>
 </body></html>
