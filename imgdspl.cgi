@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl --
 # imgdspl.cgi
-# pending{header表示(utf8JPｺｰﾄﾞNG、\ｺｰﾄﾞの扱い、form入力後初期出力画面等)}
-#150705rev(ckbox増,textarea,dir../../消去他) 150225rev 150205 131022 110419 110414rev-rftp 110117Create
+# pending{header表示(utf8JPｺｰﾄﾞNG、\ｺｰﾄﾞの扱)}
+#150711rev(ckbox増,textarea,dir../../消去他) 150225rev 150205 131022 110419 110414rev-rftp 110117Create
 use CGI qw(escapeHTML);  					# theOther use Net::FTP & File::Find
 sub cgihtmout;
 $cgi=CGI->new();
@@ -126,6 +126,7 @@ EOT
 }
 #------------------------------------------
 =head
+# input textからtextareaに変更に伴い @{[escapeHTML($hdr)]}除去
 # revUpPlan(実行時arg表示tr/\t//、sp付dirの処理、wmaタグ＆画像、img自動縮小）
 # SYNOPSIS: cb/imgdspl.cgi?hdr=title(tagOK)&dsp=checked&&hmd=hp/adl&fnm=imgdspl.htm&
   tgd=img/adl&tgd=..(複数)&exd=img/adl/av%exd=..(複数)&
